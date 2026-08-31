@@ -1,0 +1,13 @@
+{
+  "name": "battleship-royale",
+  "version": "1.0.0",
+  "description": "Benjamin Walker's Battleship Royale — browser Battleship against an AI, with a debugging test chassis",
+  "private": true,
+  "scripts": {
+    "test": "node test/run.js",
+    "bench": "node test/run.js --games 1000",
+    "replay": "node test/run.js --replay",
+    "serve": "python3 -m http.server 8080"
+  },
+  "license": "MIT"
+}

@@ -1,131 +1,18 @@
-const SIZE = 10;
-const SHIP_TYPES = [
-  { name: "Carrier", length: 5 },
-  { name: "Battleship", length: 4 },
-  { name: "Cruiser", length: 3 },
-  { name: "Submarine", length: 3 },
-  { name: "Destroyer", length: 2 },
-];
+/* Browser UI. All rules and AI live in engine.js. */
+const {
+  SIZE,
+  coordName,
+  mulberry32,
+  makeFleet,
+  emptyGrid,
+  shipCells,
+  canPlace,
+  placeShip,
+  randomFleet,
+  fire,
+  AI,
+} = Engine;
 
-const idx = (r, c) => r * SIZE + c;
-const inBounds = (r, c) => r >= 0 && r < SIZE && c >= 0 && c < SIZE;
-const coordName = (r, c) => String.fromCharCode(65 + c) + (r + 1);
-
-function makeFleet() {
-  return SHIP_TYPES.map((t) => ({ ...t, cells: [], hits: 0, sunk: false }));
-}
-
-function emptyGrid() {
-  return Array.from({ length: SIZE * SIZE }, () => null);
-}
-
-function shipCells(row, col, length, horizontal) {
-  const cells = [];
-  for (let i = 0; i < length; i++) {
-    const r = horizontal ? row : row + i;
-    const c = horizontal ? col + i : col;
-    if (!inBounds(r, c)) return null;
-    cells.push(idx(r, c));
-  }
-  return cells;
-}
-
-function canPlace(grid, cells) {
-  return cells !== null && cells.every((i) => grid[i] === null);
-}
-
-function placeShip(grid, ship, cells) {
-  ship.cells = cells;
-  cells.forEach((i) => (grid[i] = ship));
-}
-
-function randomFleet() {
-  const grid = emptyGrid();
-  const fleet = makeFleet();
-  for (const ship of fleet) {
-    let cells = null;
-    while (!canPlace(grid, cells)) {
-      const horizontal = Math.random() < 0.5;
-      const row = Math.floor(Math.random() * SIZE);
-      const col = Math.floor(Math.random() * SIZE);
-      cells = shipCells(row, col, ship.length, horizontal);
-    }
-    placeShip(grid, ship, cells);
-  }
-  return { grid, fleet };
-}
-
-/* ---------- AI: hunt with parity, target adjacent cells, follow the line ---------- */
-class AI {
-  constructor() {
-    this.tried = new Set();
-    this.targets = [];
-    this.currentHits = [];
-  }
-
-  nextShot(remainingLengths) {
-    while (this.targets.length) {
-      const t = this.targets.shift();
-      if (!this.tried.has(t)) return t;
-    }
-    const minLen = Math.min(...remainingLengths, 2);
-    const candidates = [];
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        const i = idx(r, c);
-        if (this.tried.has(i)) continue;
-        if ((r + c) % minLen === 0) candidates.push(i);
-      }
-    }
-    const pool = candidates.length
-      ? candidates
-      : [...Array(SIZE * SIZE).keys()].filter((i) => !this.tried.has(i));
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-
-  record(shot, hit, sunk) {
-    this.tried.add(shot);
-    if (!hit) return;
-    this.currentHits.push(shot);
-    if (sunk) {
-      this.currentHits = [];
-      this.targets = [];
-      return;
-    }
-    this.queueNeighbors();
-  }
-
-  queueNeighbors() {
-    const hits = this.currentHits;
-    const rows = hits.map((i) => Math.floor(i / SIZE));
-    const cols = hits.map((i) => i % SIZE);
-    const sameRow = rows.every((r) => r === rows[0]);
-    const sameCol = cols.every((c) => c === cols[0]);
-    const next = [];
-
-    if (hits.length > 1 && sameRow) {
-      const r = rows[0];
-      const sorted = [...cols].sort((a, b) => a - b);
-      next.push([r, sorted[0] - 1], [r, sorted[sorted.length - 1] + 1]);
-    } else if (hits.length > 1 && sameCol) {
-      const c = cols[0];
-      const sorted = [...rows].sort((a, b) => a - b);
-      next.push([sorted[0] - 1, c], [sorted[sorted.length - 1] + 1, c]);
-    } else {
-      const r = rows[0];
-      const c = cols[0];
-      next.push([r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]);
-    }
-
-    this.targets = next
-      .filter(([r, c]) => inBounds(r, c))
-      .map(([r, c]) => idx(r, c))
-      .filter((i) => !this.tried.has(i))
-      .concat(this.targets.filter((i) => !this.tried.has(i)));
-  }
-}
-
-/* ---------- Game state ---------- */
 const state = {
   phase: "setup",
   playerGrid: emptyGrid(),
@@ -138,6 +25,10 @@ const state = {
   horizontal: true,
   ai: new AI(),
   busy: false,
+  seed: null,
+  rng: Math.random,
+  aiDelayMs: 650,
+  events: [],
 };
 
 const el = {
@@ -157,6 +48,11 @@ const el = {
   newGameBtn: document.getElementById("newGameBtn"),
 };
 
+function setSeed(seed) {
+  state.seed = seed === null || seed === undefined || seed === "" ? null : Number(seed);
+  state.rng = state.seed === null ? Math.random : mulberry32(state.seed);
+}
+
 function buildBoard(container, onClick, onHover, onLeave) {
   container.innerHTML = "";
   for (let i = 0; i < SIZE * SIZE; i++) {
@@ -172,10 +68,12 @@ function buildBoard(container, onClick, onHover, onLeave) {
 }
 
 function log(message, cls = "") {
+  state.events.push({ turn: state.events.length, message, kind: cls || "system" });
   const line = document.createElement("div");
   line.textContent = message;
   if (cls) line.className = cls;
   el.log.prepend(line);
+  document.dispatchEvent(new CustomEvent("battleship:update"));
 }
 
 function setStatus(text) {
@@ -193,14 +91,16 @@ function renderBoards() {
   }
 
   const aiCells = el.aiBoard.children;
+  const reveal = state.phase === "over" || document.body.classList.contains("reveal-enemy");
   for (let i = 0; i < SIZE * SIZE; i++) {
     const cell = aiCells[i];
     cell.className = "cell";
     const ship = state.aiGrid[i];
     if (state.playerShots.has(i)) {
       cell.classList.add(ship ? (ship.sunk ? "sunk" : "hit") : "miss");
-    } else if (state.phase === "playing") {
-      cell.classList.add("clickable");
+    } else {
+      if (ship && reveal) cell.classList.add("ship");
+      if (state.phase === "playing") cell.classList.add("clickable");
     }
   }
 }
@@ -268,15 +168,6 @@ function handlePlacement(i) {
   setStatus(nextUnplaced === -1 ? "Fleet ready. Start the battle!" : "Place your fleet to begin.");
 }
 
-function fire(grid, fleet, shots, shot) {
-  shots.add(shot);
-  const ship = grid[shot];
-  if (!ship) return { hit: false, sunk: false, ship: null };
-  ship.hits += 1;
-  if (ship.hits >= ship.length) ship.sunk = true;
-  return { hit: true, sunk: ship.sunk, ship };
-}
-
 function checkWinner() {
   if (state.aiFleet.every((s) => s.sunk)) return "player";
   if (state.playerFleet.every((s) => s.sunk)) return "ai";
@@ -286,7 +177,7 @@ function checkWinner() {
 function playerShoot(i) {
   if (state.phase !== "playing" || state.busy || state.playerShots.has(i)) return;
   const name = coordName(Math.floor(i / SIZE), i % SIZE);
-  const res = fire(state.aiGrid, state.aiFleet, state.playerShots, i);
+  const res = fire(state.aiGrid, state.playerShots, i);
   log(`You fired at ${name}: ${res.sunk ? `SUNK the enemy ${res.ship.name}!` : res.hit ? "hit!" : "miss."}`, "you");
   renderBoards();
   renderScoreboard();
@@ -295,14 +186,16 @@ function playerShoot(i) {
 
   state.busy = true;
   setStatus("Enemy is taking aim...");
-  setTimeout(aiTurn, 650);
+  if (state.aiDelayMs > 0) setTimeout(aiTurn, state.aiDelayMs);
+  else aiTurn();
 }
 
 function aiTurn() {
+  if (state.phase !== "playing") return;
   const remaining = state.playerFleet.filter((s) => !s.sunk).map((s) => s.length);
   const shot = state.ai.nextShot(remaining);
   const name = coordName(Math.floor(shot / SIZE), shot % SIZE);
-  const res = fire(state.playerGrid, state.playerFleet, state.aiShots, shot);
+  const res = fire(state.playerGrid, state.aiShots, shot);
   state.ai.record(shot, res.hit, res.sunk);
   log(`Enemy fired at ${name}: ${res.sunk ? `SUNK your ${res.ship.name}!` : res.hit ? "hit!" : "miss."}`, "ai");
   renderBoards();
@@ -318,18 +211,16 @@ function endGame(winner) {
   state.phase = "over";
   state.busy = false;
   renderBoards();
-  for (let i = 0; i < SIZE * SIZE; i++) {
-    if (state.aiGrid[i] && !state.playerShots.has(i)) el.aiBoard.children[i].classList.add("ship");
-  }
   setStatus(winner === "player" ? "Victory! You sank the enemy fleet." : "Defeat. Your fleet is gone.");
   log(winner === "player" ? "=== You win ===" : "=== AI wins ===");
 }
 
 function startBattle() {
   if (!state.playerFleet.every((s) => s.cells.length)) return;
-  const enemy = randomFleet();
+  const enemy = randomFleet(state.rng);
   state.aiGrid = enemy.grid;
   state.aiFleet = enemy.fleet;
+  state.ai = new AI(state.rng);
   state.phase = "playing";
   el.setup.hidden = true;
   el.scoreboard.hidden = false;
@@ -337,7 +228,7 @@ function startBattle() {
   renderBoards();
   renderScoreboard();
   setStatus("Your turn — fire at enemy waters.");
-  log("Battle started. Good hunting.");
+  log(`Battle started${state.seed === null ? "" : ` (seed ${state.seed})`}. Good hunting.`);
 }
 
 function resetFleet() {
@@ -351,7 +242,7 @@ function resetFleet() {
 }
 
 function randomizePlayerFleet() {
-  const { grid, fleet } = randomFleet();
+  const { grid, fleet } = randomFleet(state.rng);
   state.playerGrid = grid;
   state.playerFleet = fleet;
   clearPreview();
@@ -366,8 +257,10 @@ function newGame() {
   state.aiShots = new Set();
   state.aiGrid = emptyGrid();
   state.aiFleet = makeFleet();
-  state.ai = new AI();
+  state.events = [];
   state.busy = false;
+  if (state.seed !== null) setSeed(state.seed);
+  state.ai = new AI(state.rng);
   el.setup.hidden = false;
   el.scoreboard.hidden = true;
   el.log.innerHTML = "";
@@ -383,6 +276,7 @@ el.resetBtn.addEventListener("click", resetFleet);
 el.startBtn.addEventListener("click", startBattle);
 el.newGameBtn.addEventListener("click", newGame);
 document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT") return;
   if (e.key.toLowerCase() === "r") el.rotateBtn.click();
 });
 
@@ -390,3 +284,22 @@ buildBoard(el.playerBoard, handlePlacement, previewPlacement, clearPreview);
 buildBoard(el.aiBoard, playerShoot);
 renderBoards();
 renderFleetPanels();
+
+/* Handle for the debug chassis (debug.js) and for console poking. */
+window.Game = {
+  state,
+  el,
+  setSeed,
+  newGame,
+  startBattle,
+  randomizePlayerFleet,
+  resetFleet,
+  playerShoot,
+  aiTurn,
+  checkWinner,
+  renderBoards,
+  renderScoreboard,
+  renderFleetPanels,
+  log,
+  setStatus,
+};

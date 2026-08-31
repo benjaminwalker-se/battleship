@@ -162,6 +162,44 @@ button:disabled { border-color: var(--line); color: #b6b2ad; cursor: not-allowed
   overflow-y: auto;
   font-size: 13px;
 }
+#debugPanel {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink);
+}
+#debugPanel .dbg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+#debugPanel label { font-size: 12px; color: var(--muted); }
+#debugPanel input {
+  width: 78px;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 0;
+}
+#debugPanel button { font-size: 12px; padding: 5px 10px; }
+#dbgOut {
+  margin: 0;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow: auto;
+}
+
+body.reveal-enemy .board.enemy .cell.ship { background: repeating-linear-gradient(45deg, #e6e3df, #e6e3df 4px, #d3cfca 4px, #d3cfca 8px); }
+
 #log div { color: var(--muted); padding: 2px 0; }
 #log div.you { color: var(--ink); }
 #log div.ai { color: var(--sunk); }
