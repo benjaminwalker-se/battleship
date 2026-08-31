@@ -13,6 +13,10 @@ Fleet: Carrier (5), Battleship (4), Cruiser (3), Submarine (3), Destroyer (2) on
 
 Hunt/target search: in hunt mode it samples untried cells on a parity lattice (no 2-cell ship can hide between them); after a hit it queues the neighbouring cells, and once two hits line up it extends along that line only. It clears a full fleet in ~60 shots on average versus ~95 for uniform random fire.
 
+## Music
+
+`music.js` synthesises a NES-style naval march in WebAudio (two pulse voices, a triangle bass and noise percussion) — no audio files, no dependencies. Play/pause and volume live in the header; volume persists in `localStorage`. `Music.render()` renders one loop offline and returns its peak amplitude, so the audio can be checked without speakers.
+
 ## Debugging test chassis
 
 Rules and AI live in `engine.js`, shared verbatim by the browser (`window.Engine`) and Node (`require`), so tests exercise the code that actually ships. All randomness goes through a seeded Mulberry32 PRNG, so a seed reproduces both fleets and every AI choice.

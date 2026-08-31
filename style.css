@@ -154,6 +154,50 @@ button:disabled { border-color: var(--line); color: #b6b2ad; cursor: not-allowed
 
 .hint { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
 
+#music {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+#music button { min-width: 96px; text-align: left; }
+
+#musicVol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#musicVolume {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 1px;
+  background: var(--ink);
+  cursor: pointer;
+}
+
+#musicVolume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 14px;
+  background: var(--ink);
+}
+
+#musicVolume::-moz-range-thumb {
+  width: 10px;
+  height: 14px;
+  border: 0;
+  border-radius: 0;
+  background: var(--ink);
+}
+
 #log {
   margin-top: 20px;
   padding-top: 14px;
