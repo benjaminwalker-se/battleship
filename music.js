@@ -49,8 +49,9 @@
   let ctx = null;
   let master = null;
   let timer = null;
-  let nextLoopAt = 0;
+  let nextLoopAt = null;
   let playing = false;
+  let loopsScheduled = 0;
   let volume = 0.35;
 
   function ensureContext() {
@@ -124,20 +125,25 @@
   }
 
   function pump() {
+    if (!playing) return;
     while (nextLoopAt < ctx.currentTime + LOOP) {
       scheduleLoop(ctx, master, nextLoopAt);
       nextLoopAt += LOOP;
+      loopsScheduled += 1;
     }
   }
 
+  // Suspending freezes ctx.currentTime, so the scheduling timeline survives a
+  // pause: resuming continues it rather than laying a second loop over the
+  // sources that are still scheduled.
   function play() {
-    ensureContext();
-    if (ctx.state === "suspended") ctx.resume();
     if (playing) return;
+    ensureContext();
     playing = true;
-    nextLoopAt = ctx.currentTime + 0.1;
+    ctx.resume();
+    if (nextLoopAt === null) nextLoopAt = ctx.currentTime + 0.1;
     pump();
-    timer = setInterval(pump, (LOOP * 1000) / 2);
+    if (timer === null) timer = setInterval(pump, (LOOP * 1000) / 2);
   }
 
   function pause() {
@@ -145,7 +151,7 @@
     playing = false;
     clearInterval(timer);
     timer = null;
-    if (ctx) ctx.suspend();
+    ctx.suspend();
   }
 
   function setVolume(value) {
@@ -193,7 +199,8 @@
     slider.addEventListener("input", () => setVolume(Number(slider.value) / 100));
   }
 
-  window.Music = { play, pause, setVolume, isPlaying: () => playing, context: () => ctx, render };
+  window.Music = { play, pause, setVolume, isPlaying: () => playing, context: () => ctx, render,
+    stats: () => ({ playing, loopsScheduled, nextLoopAt, state: ctx && ctx.state, now: ctx && ctx.currentTime }) };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", build);
