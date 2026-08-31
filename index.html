@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Battleship vs AI</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>Battleship</h1>
+  <p id="status">Place your fleet to begin.</p>
+</header>
+
+<main>
+  <section class="board-wrap">
+    <h2>Your waters</h2>
+    <div id="playerBoard" class="board" aria-label="Your board"></div>
+  </section>
+
+  <section class="board-wrap">
+    <h2>Enemy waters</h2>
+    <div id="aiBoard" class="board enemy" aria-label="Enemy board"></div>
+  </section>
+
+  <aside id="panel">
+    <div id="setup">
+      <h3>Fleet</h3>
+      <ul id="fleetList"></ul>
+      <p class="hint">Click a ship, then click your board to place it.</p>
+      <div class="btn-row">
+        <button id="rotateBtn">Rotate: Horizontal</button>
+        <button id="randomBtn">Random fleet</button>
+        <button id="resetBtn">Clear</button>
+        <button id="startBtn" disabled>Start battle</button>
+      </div>
+    </div>
+
+    <div id="scoreboard" hidden>
+      <h3>Enemy fleet</h3>
+      <ul id="aiFleetList"></ul>
+      <h3>Your fleet</h3>
+      <ul id="playerFleetList"></ul>
+      <div class="btn-row">
+        <button id="newGameBtn">New game</button>
+      </div>
+    </div>
+
+    <div id="log" aria-live="polite"></div>
+  </aside>
+</main>
+
+<script src="game.js"></script>
+</body>
+</html>
