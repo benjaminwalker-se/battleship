@@ -161,7 +161,7 @@
   function build() {
     try {
       const stored = Number(localStorage.getItem("battleship.volume"));
-      if (Number.isFinite(stored) && stored > 0) volume = stored;
+      if (Number.isFinite(stored) && stored >= 0) volume = stored;
     } catch (e) {
       /* storage unavailable */
     }
