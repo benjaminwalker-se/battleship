@@ -1,6 +1,6 @@
-# Battleship
+# Benjamin Walker's Battleship Royale
 
-Browser Battleship against an AI opponent. No build step, no backend — open `index.html` (or serve the folder statically).
+Browser Battleship, styled after cognition.com, against an AI opponent. No build step, no backend — open `index.html` (or serve the folder statically).
 
 ## Play
 
