@@ -151,6 +151,32 @@ async function main() {
     assert(bad.length === 0, `ship cells not usable at 375px: ${JSON.stringify(bad.slice(0, 5))}`);
   });
 
+  await test("hero art loads and keeps the commanders in frame on phones", async () => {
+    for (const width of [320, 375, 390, 414, 560, 1024, 1440]) {
+      await resize(width);
+      await page.goto(base, { waitUntil: "networkidle0" });
+      await resize(width);
+      const hero = await page.evaluate(() => {
+        const img = document.querySelector("#hero img");
+        const band = document.getElementById("hero").getBoundingClientRect();
+        return {
+          loaded: img.complete && img.naturalWidth > 0,
+          src: img.currentSrc,
+          band: band.height,
+          top: band.top,
+          // fraction of the artwork's height the band actually shows
+          shown: band.height / ((band.width * img.naturalHeight) / img.naturalWidth),
+        };
+      });
+      assert(hero.loaded, `at ${width}px the hero image did not load (${hero.src})`);
+      assert(hero.top <= 0.5, `at ${width}px the hero band does not start at the top of the page`);
+      // Phones get the full-bleed art, so the band has to be tall enough to hold
+      // both commanders; wider screens crop to a band on purpose.
+      const floor = width <= 560 ? 0.65 : 0.3;
+      assert(hero.shown >= floor, `at ${width}px the band shows only ${(hero.shown * 100).toFixed(0)}% of the art`);
+    }
+  });
+
   console.log("\nplacement through the UI");
 
   await test("manual placement never runs off the grid or wraps a row", async () => {
