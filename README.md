@@ -17,6 +17,10 @@ Hunt/target search: in hunt mode it samples untried cells on a parity lattice (n
 
 `music.js` synthesises a NES-style naval march in WebAudio (two pulse voices, a triangle bass and noise percussion) — no audio files, no dependencies. Play/pause and volume live in the header; volume persists in `localStorage`. `Music.render()` renders one loop offline and returns its peak amplitude, so the audio can be checked without speakers.
 
+## Artwork
+
+`assets/hero.png` is the 8-bit commanders illustration, used as a decorative header band (`#hero`): `background-size: cover` with a gradient mask that fades it into the paper background before the title, `pointer-events: none` and `aria-hidden` so it never intercepts clicks or reaches screen readers. Height and crop shrink at the 900px and 560px breakpoints.
+
 ## Debugging test chassis
 
 Rules and AI live in `engine.js`, shared verbatim by the browser (`window.Engine`) and Node (`require`), so tests exercise the code that actually ships. All randomness goes through a seeded Mulberry32 PRNG, so a seed reproduces both fleets and every AI choice.
