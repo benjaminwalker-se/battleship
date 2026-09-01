@@ -5,9 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Benjamin Walker's Battleship Royale</title>
 <link rel="stylesheet" href="style.css" />
+<link rel="preload" as="image" href="assets/hero.webp" type="image/webp" fetchpriority="high" />
 </head>
 <body>
-<div id="hero" role="presentation" aria-hidden="true"></div>
+<div id="hero" role="presentation" aria-hidden="true">
+  <picture>
+    <source srcset="assets/hero.webp" type="image/webp" />
+    <img src="assets/hero.png" alt="" fetchpriority="high" decoding="sync" />
+  </picture>
+</div>
 
 <header>
   <h1>Benjamin Walker's Battleship Royale</h1>

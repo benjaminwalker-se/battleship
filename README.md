@@ -19,7 +19,7 @@ Hunt/target search: in hunt mode it samples untried cells on a parity lattice (n
 
 ## Artwork
 
-`assets/hero.png` is the 8-bit commanders illustration, used as a decorative header band (`#hero`): `background-size: cover` with a gradient mask that fades it into the paper background before the title, `pointer-events: none` and `aria-hidden` so it never intercepts clicks or reaches screen readers. Height and crop shrink at the 900px and 560px breakpoints.
+`assets/hero.webp` (with `assets/hero.png` as the `<picture>` fallback) is the 8-bit commanders illustration, used as a decorative header band (`#hero`): an `<img>` with `object-fit: cover`, a gradient mask that fades it into the paper background before the title, `pointer-events: none` and `aria-hidden` so it never intercepts clicks or reaches screen readers. It is preloaded with `fetchpriority="high"` so the band is painted on first render. Band height and the `--hero-anchor` crop change at the 1700px, 900px and 560px breakpoints; on phones the band is tall enough to hold both commanders at full-bleed width.
 
 ## Debugging test chassis
 
