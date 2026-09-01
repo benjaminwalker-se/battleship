@@ -67,11 +67,12 @@ header h1 {
 }
 
 main {
+  --gutter: 32px;
   display: flex;
   flex-wrap: wrap;
   gap: 40px;
   align-items: flex-start;
-  padding: 32px;
+  padding: var(--gutter);
 }
 
 .board-wrap h2 {
@@ -94,9 +95,12 @@ main {
 main { counter-reset: board; }
 
 .board {
+  /* 10 cells + 9 gaps + padding + border must fit the viewport, or the right
+     columns end up off-screen on phones. */
+  --cell: min(34px, calc((100vw - 2 * var(--gutter) - 13px) / 10));
   display: grid;
-  grid-template-columns: repeat(10, 34px);
-  grid-template-rows: repeat(10, 34px);
+  grid-template-columns: repeat(10, var(--cell));
+  grid-template-rows: repeat(10, var(--cell));
   background: var(--line);
   gap: 1px;
   padding: 1px;
@@ -291,6 +295,17 @@ body.reveal-enemy .board.enemy .cell.ship { background: repeating-linear-gradien
 }
 
 @media (max-width: 560px) {
+  main {
+    --gutter: 16px;
+    gap: 24px;
+  }
+
+  #panel {
+    width: 100%;
+    border-left: 0;
+    padding-left: 0;
+  }
+
   #hero {
     height: 120px;
     background-position: center 20%;

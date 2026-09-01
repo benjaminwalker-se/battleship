@@ -61,6 +61,25 @@
     master = ctx.createGain();
     master.gain.value = volume;
     master.connect(ctx.destination);
+    // iOS routes WebAudio through the ringer (silent switch) unless the page
+    // declares itself a playback session.
+    if (navigator.audioSession) {
+      try {
+        navigator.audioSession.type = "playback";
+      } catch (e) {
+        /* unsupported value */
+      }
+    }
+  }
+
+  // Mobile Safari only wires up an AudioContext if something is started from
+  // inside the gesture handler itself, before any await.
+  function unlock() {
+    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
   }
 
   function playTone(audio, dest, note, start, beats, { type, gain, duty }) {
@@ -137,13 +156,20 @@
   // pause: resuming continues it rather than laying a second loop over the
   // sources that are still scheduled.
   function play() {
-    if (playing) return;
+    if (playing) return Promise.resolve();
     ensureContext();
     playing = true;
-    ctx.resume();
-    if (nextLoopAt === null) nextLoopAt = ctx.currentTime + 0.1;
-    pump();
-    if (timer === null) timer = setInterval(pump, (LOOP * 1000) / 2);
+    unlock();
+    return Promise.resolve(ctx.resume())
+      .catch(() => {})
+      .then(() => {
+        if (!playing) return;
+        // Some mobile browsers keep the clock running while suspended, which
+        // leaves the saved timeline in the past and schedules into silence.
+        if (nextLoopAt === null || nextLoopAt < ctx.currentTime) nextLoopAt = ctx.currentTime + 0.1;
+        pump();
+        if (timer === null) timer = setInterval(pump, (LOOP * 1000) / 2);
+      });
   }
 
   function pause() {
@@ -188,15 +214,24 @@
     const slider = wrap.querySelector("#musicVolume");
     slider.value = String(Math.round(volume * 100));
 
-    toggle.addEventListener("click", () => {
-      if (playing) pause();
-      else play();
+    const syncToggle = () => {
       toggle.textContent = playing ? "❚❚ Theme" : "▶ Theme";
       toggle.setAttribute("aria-pressed", String(playing));
       toggle.title = playing ? "Pause theme music" : "Play theme music";
+    };
+
+    toggle.addEventListener("click", () => {
+      if (playing) pause();
+      else play().then(syncToggle);
+      syncToggle();
     });
 
     slider.addEventListener("input", () => setVolume(Number(slider.value) / 100));
+
+    // Mobile browsers suspend the context when the tab is backgrounded.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && playing && ctx && ctx.state === "suspended") play();
+    });
   }
 
   window.Music = { play, pause, setVolume, isPlaying: () => playing, context: () => ctx, render,
