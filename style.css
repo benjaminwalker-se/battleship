@@ -24,9 +24,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#hero {
+  height: clamp(180px, 24vw, 360px);
+  background: url("assets/hero.png") center 24% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.45) 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.45) 82%,
+    transparent 100%
+  );
+  pointer-events: none;
+  user-select: none;
+}
+
 header {
+  position: relative;
   border-bottom: 1px solid var(--line);
   padding: 28px 32px 20px;
+  margin-top: clamp(-64px, -4vw, -24px);
 }
 
 header h1 {
@@ -247,3 +270,19 @@ body.reveal-enemy .board.enemy .cell.ship { background: repeating-linear-gradien
 #log div { color: var(--muted); padding: 2px 0; }
 #log div.you { color: var(--ink); }
 #log div.ai { color: var(--sunk); }
+
+@media (max-width: 900px) {
+  #hero {
+    height: clamp(140px, 26vw, 220px);
+    background-position: center 22%;
+  }
+  header { margin-top: -18px; }
+}
+
+@media (max-width: 560px) {
+  #hero {
+    height: 120px;
+    background-position: center 20%;
+  }
+  header { margin-top: -12px; padding: 20px 20px 16px; }
+}
