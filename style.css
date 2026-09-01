@@ -271,10 +271,21 @@ body.reveal-enemy .board.enemy .cell.ship { background: repeating-linear-gradien
 #log div.you { color: var(--ink); }
 #log div.ai { color: var(--sunk); }
 
+@media (min-width: 1700px) {
+  /* cover scales the art by width, so a capped band crops further into the
+     heads the wider the viewport gets */
+  #hero {
+    height: clamp(360px, 19vw, 440px);
+    background-position: center 16%;
+  }
+}
+
 @media (max-width: 900px) {
   #hero {
     height: clamp(140px, 26vw, 220px);
     background-position: center 22%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 46%, rgba(0, 0, 0, 0.4) 74%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 46%, rgba(0, 0, 0, 0.4) 74%, transparent 100%);
   }
   header { margin-top: -18px; }
 }
